@@ -195,3 +195,35 @@ def column_parallel_linear(inputs: Tensor, weight: Tensor, shard_count: int) -> 
             )
         )
     return join_shards(output_shards)
+
+
+def row_parallel_linear(inputs: Tensor, weight: Tensor, shard_count: int) -> Tensor:
+    """Simulate row-parallel linear by summing workers' partial outputs.
+
+    ``weight`` uses shape ``(input_features, output_features)``. Both the input
+    features and weight rows are split along axis 0/1 respectively. Each worker
+    multiplies its matching slices, then the partial outputs are summed, as in
+    the reduce step of row-wise tensor parallelism.
+    """
+
+    if len(weight.shape) != 2 or len(inputs.shape) != 2:
+        raise ValueError("row_parallel_linear requires rank-2 input and weight tensors")
+    if inputs.shape[1] != weight.shape[0]:
+        raise ValueError(f"input shape {inputs.shape} does not match weight shape {weight.shape}")
+
+    input_shards = split_tensor(
+        inputs, tensor_name="linear.input", axis=1, shard_count=shard_count
+    )
+    weight_shards = split_tensor(
+        weight, tensor_name="linear.weight", axis=0, shard_count=shard_count
+    )
+
+    partial_outputs = [
+        matrix_multiply(input_shard.tensor, weight_shard.tensor)
+        for input_shard, weight_shard in zip(input_shards, weight_shards, strict=True)
+    ]
+    output_values = tuple(
+        sum(partial.values[index] for partial in partial_outputs)
+        for index in range(len(partial_outputs[0].values))
+    )
+    return Tensor(partial_outputs[0].shape, output_values, "float32")

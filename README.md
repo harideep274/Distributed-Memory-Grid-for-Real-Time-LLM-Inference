@@ -46,6 +46,12 @@ To run it without installing the package, use `PYTHONPATH=src python3 -m distrib
 
 It partitions a linear layer's weight matrix by output columns, simulates each worker's local matrix multiply, gathers the outputs, and compares them with a single-process reference. The initial implementation is pure Python and demonstrates the layout and correctness boundary; it does not yet load a Hugging Face model or communicate with separate worker processes.
 
+The row-parallel example splits input features and weight rows across workers, then sums each worker's partial output. Run it from the repository root with:
+
+```bash
+PYTHONPATH=src python3 -m distributed_memgrid.row_parallel_demo
+```
+
 ## Project plan
 
 See [the architecture](docs/ARCHITECTURE.md), [four-person work distribution](docs/WORK_DISTRIBUTION.md), and [two-week roadmap](docs/ROADMAP.md).
