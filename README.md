@@ -4,7 +4,7 @@ Team project to explore sharded model weights and distributed inference across w
 
 ## Project status
 
-**Week 1: architecture and foundation.** The repository currently contains the agreed interfaces and team workflow. The first end-to-end milestone is a master that can register workers and report their status; model loading and distributed execution follow after that boundary is reviewed by the team.
+**Two-week restart sprint: control plane and shard correctness.** The repository is a scaffold. The target demo is a master registering multiple workers, assigning model tensor shards, and validating shard loading and reconstruction. Full distributed generation is a follow-on milestone. See the two-week roadmap and four-person work distribution below.
 
 ## Team workflow
 
@@ -18,7 +18,7 @@ Team project to explore sharded model weights and distributed inference across w
 Requires Python 3.11 or newer.
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
 python -m pip install -e '.[dev]'
 ```
@@ -29,8 +29,23 @@ Run the initial master process:
 python -m distributed_memgrid.master
 ```
 
-The master currently exposes a small HTTP health and worker-status endpoint. This is a development scaffold, not yet a distributed inference server. The team will replace/extend the transport with the gRPC contract in the Week 1 implementation.
+The master currently exposes a small HTTP health and worker-status endpoint. This is a development scaffold, not yet a distributed inference server. Agree on the first master/worker RPC contract before implementing the transport.
+
+## Run the model-parallel demo
+
+The sharding demo uses synthetic tensors, so it needs no model download or optional ML dependencies. From the repository root, install the package in editable mode and run:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate  # Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install -e .
+python -m distributed_memgrid.demo
+```
+
+To run it without installing the package, use `PYTHONPATH=src python3 -m distributed_memgrid.demo` from the repository root. In VS Code, open this repository folder, select your Python interpreter, then choose **Run and Debug → Run model-parallel demo** (F5).
+
+It partitions a linear layer's weight matrix by output columns, simulates each worker's local matrix multiply, gathers the outputs, and compares them with a single-process reference. The initial implementation is pure Python and demonstrates the layout and correctness boundary; it does not yet load a Hugging Face model or communicate with separate worker processes.
 
 ## Project plan
 
-See [the architecture](docs/ARCHITECTURE.md), [four-person work distribution](docs/WORK_DISTRIBUTION.md), and [weekly milestones](docs/ROADMAP.md).
+See [the architecture](docs/ARCHITECTURE.md), [four-person work distribution](docs/WORK_DISTRIBUTION.md), and [two-week roadmap](docs/ROADMAP.md).

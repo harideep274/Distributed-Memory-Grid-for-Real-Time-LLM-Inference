@@ -10,6 +10,8 @@ build/
 .env
 .idea/
 .vscode/
+!.vscode/
+!.vscode/launch.json
 *.safetensors
 *.pt
 *.pth
