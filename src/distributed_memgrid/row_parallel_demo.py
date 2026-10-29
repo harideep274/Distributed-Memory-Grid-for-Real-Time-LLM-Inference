@@ -26,6 +26,7 @@ def main() -> None:
             2.0,
         ),
     )
+    bias = Tensor((2,), (0.5, -1.0))
 
     input_shards = split_tensor(
         inputs, tensor_name="demo.linear.input", axis=1, shard_count=2
@@ -43,8 +44,17 @@ def main() -> None:
             f"weight shape={weight_shard.tensor.shape}, partial={partial.values}"
         )
 
-    reduced_output = row_parallel_linear(inputs, weight, shard_count=2)
-    reference_output = matrix_multiply(inputs, weight)
+    reduced_output = row_parallel_linear(inputs, weight, shard_count=2, bias=bias)
+    raw_reference = matrix_multiply(inputs, weight)
+    reference_output = Tensor(
+        raw_reference.shape,
+        tuple(
+            value + bias.values[index % weight.shape[1]]
+            for index, value in enumerate(raw_reference.values)
+        ),
+        raw_reference.dtype,
+    )
+    print(f"Bias: {bias.values}")
     print(f"Reduced worker outputs: {reduced_output.values}")
     print(f"Single-process reference: {reference_output.values}")
 

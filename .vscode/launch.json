@@ -12,6 +12,18 @@
       },
       "console": "integratedTerminal",
       "justMyCode": true
+    },
+    {
+      "name": "Run row-parallel demo",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "distributed_memgrid.row_parallel_demo",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": true
     }
   ]
 }

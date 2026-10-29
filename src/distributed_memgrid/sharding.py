@@ -197,19 +197,27 @@ def column_parallel_linear(inputs: Tensor, weight: Tensor, shard_count: int) -> 
     return join_shards(output_shards)
 
 
-def row_parallel_linear(inputs: Tensor, weight: Tensor, shard_count: int) -> Tensor:
+def row_parallel_linear(
+    inputs: Tensor,
+    weight: Tensor,
+    shard_count: int,
+    bias: Tensor | None = None,
+) -> Tensor:
     """Simulate row-parallel linear by summing workers' partial outputs.
 
     ``weight`` uses shape ``(input_features, output_features)``. Both the input
     features and weight rows are split along axis 0/1 respectively. Each worker
     multiplies its matching slices, then the partial outputs are summed, as in
-    the reduce step of row-wise tensor parallelism.
+    the reduce step of row-wise tensor parallelism. An optional bias is added
+    once after reduction, not once on every worker.
     """
 
     if len(weight.shape) != 2 or len(inputs.shape) != 2:
         raise ValueError("row_parallel_linear requires rank-2 input and weight tensors")
     if inputs.shape[1] != weight.shape[0]:
         raise ValueError(f"input shape {inputs.shape} does not match weight shape {weight.shape}")
+    if bias is not None and bias.shape != (weight.shape[1],):
+        raise ValueError(f"bias must have shape ({weight.shape[1]},); got {bias.shape}")
 
     input_shards = split_tensor(
         inputs, tensor_name="linear.input", axis=1, shard_count=shard_count
@@ -222,8 +230,14 @@ def row_parallel_linear(inputs: Tensor, weight: Tensor, shard_count: int) -> Ten
         matrix_multiply(input_shard.tensor, weight_shard.tensor)
         for input_shard, weight_shard in zip(input_shards, weight_shards, strict=True)
     ]
-    output_values = tuple(
+    output_values = [
         sum(partial.values[index] for partial in partial_outputs)
         for index in range(len(partial_outputs[0].values))
-    )
-    return Tensor(partial_outputs[0].shape, output_values, "float32")
+    ]
+    if bias is not None:
+        output_width = weight.shape[1]
+        for row in range(inputs.shape[0]):
+            for column in range(output_width):
+                index = row * output_width + column
+                output_values[index] += bias.values[column]
+    return Tensor(partial_outputs[0].shape, tuple(output_values), "float32")
