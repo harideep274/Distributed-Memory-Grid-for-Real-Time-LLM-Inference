@@ -166,24 +166,49 @@ def matrix_multiply(left: Tensor, right: Tensor) -> Tensor:
     return Tensor((rows, columns), tuple(output), "float32")
 
 
-def column_parallel_linear(inputs: Tensor, weight: Tensor, shard_count: int) -> Tensor:
+def column_parallel_linear(
+    inputs: Tensor,
+    weight: Tensor,
+    shard_count: int,
+    bias: Tensor | None = None,
+) -> Tensor:
     """Simulate column-parallel linear: each worker computes output columns.
 
     ``weight`` uses the common linear-layer layout ``(input_features,
     output_features)``. Each worker receives a slice along axis 1, computes its
-    local output, and outputs are gathered along axis 1.
+    local output, and outputs are gathered along axis 1. An optional bias vector
+    is split by output column and added to each worker's local output.
     """
 
     if len(weight.shape) != 2 or len(inputs.shape) != 2:
         raise ValueError("column_parallel_linear requires rank-2 input and weight tensors")
     if inputs.shape[1] != weight.shape[0]:
         raise ValueError(f"input shape {inputs.shape} does not match weight shape {weight.shape}")
+    if bias is not None and bias.shape != (weight.shape[1],):
+        raise ValueError(f"bias must have shape ({weight.shape[1]},); got {bias.shape}")
 
-    output_shards: list[TensorShard] = []
-    for weight_shard in split_tensor(
+    weight_shards = split_tensor(
         weight, tensor_name="linear.weight", axis=1, shard_count=shard_count
-    ):
+    )
+    bias_shards = (
+        split_tensor(bias, tensor_name="linear.bias", axis=0, shard_count=shard_count)
+        if bias is not None
+        else None
+    )
+    output_shards: list[TensorShard] = []
+    for weight_shard in weight_shards:
         local_output = matrix_multiply(inputs, weight_shard.tensor)
+        if bias_shards is not None:
+            local_bias = bias_shards[weight_shard.shard_index].tensor.values
+            local_width = len(local_bias)
+            local_output = Tensor(
+                local_output.shape,
+                tuple(
+                    value + local_bias[index % local_width]
+                    for index, value in enumerate(local_output.values)
+                ),
+                local_output.dtype,
+            )
         output_shards.append(
             TensorShard(
                 tensor_name="linear.output",
