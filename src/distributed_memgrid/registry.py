@@ -15,5 +15,9 @@ class WorkerRegistry:
     def remove(self, worker_id: str) -> bool:
         return self._workers.pop(worker_id, None) is not None
 
+    def get_worker(self, worker_id: str) -> WorkerInfo | None:
+        """Return a registered worker, or None if it is not registered."""
+        return self._workers.get(worker_id)
+
     def list_workers(self) -> list[WorkerInfo]:
         return sorted(self._workers.values(), key=lambda worker: worker.worker_id)
