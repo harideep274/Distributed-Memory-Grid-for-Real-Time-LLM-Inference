@@ -21,7 +21,7 @@ The diagram is the target architecture, not a claim that all paths are currently
 ## Implemented review boundary
 
 - `sharding.py` provides a small pure-Python row-major tensor representation, even contiguous splitting, shard validation/reconstruction, and simulated row/column parallel linear operations.
-- `master.py` exposes local HTTP health, worker registration/listing, and cluster summary routes backed by an in-memory registry.
+- `master.py` exposes local HTTP health, worker registration, heartbeat, listing, and cluster summary routes backed by an in-memory registry. Workers without a heartbeat for 30 seconds are reported unavailable.
 - `runtime.py` sketches FIFO iteration-level admission and token-slot cache accounting. It has no model runner or GPU memory allocator.
 - `demo.py` and `row_parallel_demo.py` compare synthetic parallel-layout results against local reference computations.
 - `website/` is a static project review page. Its animated flow is illustrative and has no connection to the coordinator.
