@@ -1,19 +1,16 @@
 # Distributed Memory Grid for Real-Time LLM Inference
 
-Team project to explore sharded model weights and distributed inference across worker nodes.
+An early-stage project exploring how to coordinate model shards across commodity worker nodes. The current review milestone focuses on deterministic tensor layout helpers, a lightweight coordinator API, and framework-independent runtime sketches.
 
-## Project status
+## Current status
 
-**Two-week restart sprint: control plane and shard correctness.** The repository is a scaffold. The target demo is a master registering multiple workers, assigning model tensor shards, and validating shard loading and reconstruction. Full distributed generation is a follow-on milestone. See the two-week roadmap and four-person work distribution below.
+**Implemented:** column- and row-parallel tensor split/compute/gather demonstrations; shard metadata validation; an in-memory worker registry; FastAPI health, registration, worker listing, and cluster summary routes; small continuous-batch admission and bounded token-slot cache primitives.
 
-## Team workflow
+**Not implemented yet:** gRPC transport, PyTorch distributed collectives, safetensors loading, real model execution, GPU KV-cache/page management, token streaming, multi-node deployment, or performance measurements. The tensor demos use small synthetic values and run in one process. The website's flow animation is also a local simulation, not a live cluster view.
 
-- Keep `main` stable; work on one branch per member (`lead`, `networking`, `model-parallel`, `runtime-api`). Replace these example names with your GitHub usernames.
-- Push meaningful work daily. Do not use empty commits to satisfy activity requirements.
-- Open a pull request for changes to `main`; request a peer review before merging.
-- Track work in GitHub Issues and keep `docs/WORK_DISTRIBUTION.md` current.
+This is a review prototype, not a production inference service. See [the architecture](docs/ARCHITECTURE.md), [the four-week roadmap](docs/ROADMAP.md), and [the review website](website/README.md).
 
-## Setup
+## Setup and run
 
 Requires Python 3.11 or newer.
 
@@ -21,37 +18,33 @@ Requires Python 3.11 or newer.
 python3 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
 python -m pip install -e '.[dev]'
+PYTHONPATH=src python -m distributed_memgrid.demo
+PYTHONPATH=src python -m distributed_memgrid.row_parallel_demo
 ```
 
-Run the initial master process:
+Start the coordinator API with `PYTHONPATH=src python -m distributed_memgrid.master`. It listens on `http://127.0.0.1:8000` and exposes:
 
-```bash
-python -m distributed_memgrid.master
+- `GET /health` — process health.
+- `POST /workers` — register a worker with `worker_id`, `address`, optional `memory_bytes`, and optional `labels`.
+- `GET /workers` — list registered workers.
+- `GET /cluster` — summarize worker count and reported memory.
+
+Example registration body:
+
+```json
+{"worker_id":"worker-01","address":"127.0.0.1:50051","memory_bytes":8589934592,"labels":{"zone":"local"}}
 ```
 
-The master currently exposes a small HTTP health and worker-status endpoint. This is a development scaffold, not yet a distributed inference server. Agree on the first master/worker RPC contract before implementing the transport.
+The registry is in memory and resets when the process restarts. Registration is a coordinator API boundary; it is not a gRPC worker connection.
 
-## Run the model-parallel demo
+## Review website
 
-The sharding demo uses synthetic tensors, so it needs no model download or optional ML dependencies. From the repository root, install the package in editable mode and run:
+Preview the static site with `python3 -m http.server 8080 --directory website` and open `http://localhost:8080`. The site is deployable through the GitHub Pages workflow in `.github/workflows/pages.yml`; see [website deployment notes](website/README.md). Hosting requires enabling GitHub Pages on the repository, and no public URL exists until that workflow is run successfully.
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate  # Windows PowerShell: .venv\Scripts\Activate.ps1
-python -m pip install -e .
-python -m distributed_memgrid.demo
-```
+## Team workflow
 
-To run it without installing the package, use `PYTHONPATH=src python3 -m distributed_memgrid.demo` from the repository root. In VS Code, open this repository folder, select your Python interpreter, then choose **Run and Debug → Run model-parallel demo** (F5).
-
-It partitions a linear layer's weight matrix by output columns, simulates each worker's local matrix multiply, gathers the outputs, and compares them with a single-process reference. The initial implementation is pure Python and demonstrates the layout and correctness boundary; it does not yet load a Hugging Face model or communicate with separate worker processes.
-
-The row-parallel example splits input features and weight rows across workers, sums each worker's partial output, and applies the optional bias once after reduction. Run it from the repository root with:
-
-```bash
-PYTHONPATH=src python3 -m distributed_memgrid.row_parallel_demo
-```
-
-## Project plan
-
-See [the architecture](docs/ARCHITECTURE.md), [four-person work distribution](docs/WORK_DISTRIBUTION.md), and [two-week roadmap](docs/ROADMAP.md).
+- Keep `main` stable and work on one branch per contributor.
+- Push meaningful work regularly; do not use empty commits to satisfy activity requirements.
+- Open a pull request for changes to `main` and request peer review before merging.
+- Track tasks in GitHub Issues and keep `docs/WORK_DISTRIBUTION.md` current.
+- Never commit model weights or credentials.

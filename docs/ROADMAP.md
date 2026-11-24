@@ -1,35 +1,43 @@
-# Two-week roadmap
+# Four-week project roadmap
 
-## Target demo
+This roadmap translates the project brief into staged acceptance evidence. The repository currently contains an early review prototype; stages marked planned require implementation and measurement before the final project claims can be made.
 
-Show a master coordinating at least two worker processes on one development machine. Workers register and report status; the coordinator assigns each a portion of model tensors; workers load the assigned shards; the team verifies that the shards reconstruct the source tensors. Use a small supported safetensors model when hardware permits, otherwise use deterministic synthetic tensors and document the substitution. Model weights stay outside Git.
+## Week 1 — topology and weight path
 
-This sprint proves the control plane and shard correctness. It does not promise production-ready distributed token generation, continuous batching, or multi-node performance.
+- Freeze worker registration, heartbeat, and shard-assignment RPC contracts.
+- Replace coordinator-only HTTP registration with gRPC worker registration and health checks.
+- Add safetensors metadata inspection and memory-mapped shard loading; keep model files external to Git.
+- Demonstrate two worker processes and capture registration and shard assignment logs.
 
-## Week 1 — interfaces and worker topology
+**Checkpoint:** two workers register, report capacity, receive valid assignments, and reject malformed metadata.
 
-- **Day 1:** Confirm team names, branches, development environment, model/fixture, demo hardware, and acceptance checks. Freeze registration and shard-assignment message shapes.
-- **Days 2–3:** Implement worker registration, status, heartbeat/health, and local multi-worker startup.
-- **Days 2–4:** You implement tensor metadata validation, safetensors or synthetic tensor loading, and row/column split/join helpers with documented layout rules. In parallel, the team implements worker registration and the demo boundary.
-- **Day 4:** Define the minimal coordinator/request boundary and the runnable demo entry point.
-- **Day 5 checkpoint:** Master sees two workers, reports their status, and the team can serialize/validate a shard assignment. Review interfaces and risks before Week 2.
+## Week 2 — tensor parallelism and cache lifecycle
 
-## Week 2 — shard path and integrated demonstration
+- Integrate PyTorch tensor layouts with attention and feed-forward layer partitions.
+- Compare partitioned operations to a single-process reference for selected shapes and dtypes.
+- Replace the token-slot runtime sketch with a model-backed KV-cache allocator and defined reclamation behavior.
+- Require peer review for synchronization and cache changes.
 
-- **Days 6–7:** Implement assignment delivery and worker-side shard loading; reject invalid model IDs, shapes, dtypes, and shard indices clearly. You integrate layouts with loaded tensors and document unsupported cases.
-- **Days 7–8:** Integrate the coordinator with worker registry and shard loader. Add a small status/demo API if it helps show the result.
-- **Day 9:** Compare shard reconstruction and partitioned linear results against a single-process reference on representative tensor shapes and dtypes; run the full demo from a clean setup. Fix integration defects; avoid adding new scope.
-- **Day 10:** Present the demo, setup/run instructions, correctness evidence, memory observations, known limitations, and a prioritized next milestone.
+**Checkpoint:** supported operations reconstruct or match the baseline within documented tolerance; cache memory is accounted for under concurrent sequences.
 
-## Acceptance checks
+## Week 3 — request scheduling and streaming
 
-- The master starts and exposes health and worker status.
-- At least two worker processes register and can be observed by the master.
-- A shard assignment reaches the intended worker and invalid assignments are rejected.
-- Supported source tensors can be split and reconstructed with documented tolerance, shapes, and dtypes; partitioned linear results match a single-process reference within tolerance.
-- A fresh checkout can follow the documented setup and run the demo without model weights stored in the repository.
-- The demo report records environment, model or fixture, steps run, results, and limitations.
+- Implement iteration-level continuous batching with cancellation and per-request limits.
+- Connect a supported model path to worker execution and collective communication; use NCCL only where the hardware supports it.
+- Expose a FastAPI/WebSocket client interface and stream generated token events.
+- Measure basic throughput and time to first token on a documented profile.
 
-## Follow-on work after the two-week sprint
+**Checkpoint:** requests can enter and leave active batches while other sequences continue, and a client can consume a real token stream.
 
-Add a real model execution path, tensor-parallel operator integration, request scheduling and KV-cache management, token streaming, multi-node deployment, and repeatable latency/throughput measurements. Sequence these after the shard-path demo is stable and hardware/model constraints are known.
+## Week 4 — deployment and evaluation
+
+- Package coordinator and workers in containers and deploy to a documented local or cloud cluster.
+- Configure node placement and health recovery for the selected orchestration option.
+- Run repeatable concurrency and failure scenarios; report TTFT, throughput, and inter-node latency.
+- Finalize operating instructions, architecture report, known limitations, and project review materials.
+
+**Checkpoint:** a reproducible deployment generates tokens across workers, with benchmark methodology and results published alongside deployment scripts.
+
+## Current review milestone
+
+The current code provides dependency-free synthetic column- and row-parallel linear demos, coordinator HTTP endpoints, and in-memory runtime sketches. It does not satisfy the multi-node inference checkpoints above. Use the four-week review website as a status overview, and update this file as each checkpoint gains evidence.

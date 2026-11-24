@@ -1,28 +1,37 @@
-# Initial architecture
+# Architecture and current boundaries
 
-## Goal
+## Intended system
 
-Demonstrate a master coordinating model shards across worker processes, with a client API for streaming generated tokens. The first milestone is a small, observable master/worker topology. Full model execution is added incrementally and must be verified against a single-node baseline.
+The project aims to demonstrate a coordinator assigning model tensor shards to workers, then coordinating distributed execution while an inference runtime schedules requests and manages per-request KV state. An API gateway is intended to stream token events to clients.
 
-## Components
+```mermaid
+flowchart LR
+  C[Client] -->|HTTP / WebSocket| G[API gateway]
+  G --> R[Scheduler + KV cache]
+  R --> M[Coordinator]
+  M -->|gRPC assignment / control| W1[Worker 1]
+  M -->|gRPC assignment / control| W2[Worker 2]
+  W1 <-->|collectives| W2
+  W1 --> R
+  W2 --> R
+```
 
-- **Master / coordinator:** maintains worker membership, places model shards, and later schedules generation work.
-- **Workers:** load assigned safetensors shards with memory mapping where supported and participate in tensor-parallel operations.
-- **Inference runtime:** owns request scheduling, continuous batching, and per-request KV-cache state.
-- **API gateway:** accepts generation requests and streams token events to clients using FastAPI/WebSockets.
-- **Transport:** gRPC for master/worker RPCs; the API gateway uses HTTP and WebSockets. Transport message definitions live in `proto/` once the team agrees on the first RPC contract.
+The diagram is the target architecture, not a claim that all paths are currently connected.
 
-## Initial design decisions
+## Implemented review boundary
 
-1. Keep message types transport-independent in `protocol.py` so RPC serialization can be changed without rewriting the runtime.
-2. Start with explicit worker registration and status reporting; add health checks and failure handling before relying on a worker for inference.
-3. Keep model execution optional until the topology and shard assignment are demonstrable. Do not check model weights into Git.
-4. Start with a small model and a documented hardware profile. Record any deviations from the project brief with the mentor.
-5. Treat generation output as a stream of `TokenEvent` values; the API must not depend on model-specific internals.
+- `sharding.py` provides a small pure-Python row-major tensor representation, even contiguous splitting, shard validation/reconstruction, and simulated row/column parallel linear operations.
+- `master.py` exposes local HTTP health, worker registration/listing, and cluster summary routes backed by an in-memory registry.
+- `runtime.py` sketches FIFO iteration-level admission and token-slot cache accounting. It has no model runner or GPU memory allocator.
+- `demo.py` and `row_parallel_demo.py` compare synthetic parallel-layout results against local reference computations.
+- `website/` is a static project review page. Its animated flow is illustrative and has no connection to the coordinator.
 
-## Week 1 acceptance evidence
+## Interfaces and next implementation steps
 
-- A master starts and exposes health/status information.
-- Workers can be identified and their capacity reported.
-- The team agrees on and documents the gRPC registration and shard-assignment RPCs.
-- A supported small model can be loaded from safetensors without adding model files to the repository.
+Keep shared message shapes transport-independent in `protocol.py`. Define versioned gRPC messages for worker registration, health, shard assignment, and assignment acknowledgement before introducing RPC-generated code. A worker should validate model identity, tensor name, shape, dtype, shard axis, index, and count before loading data. Safetensors and PyTorch should remain optional runtime dependencies, and model weights should stay outside Git.
+
+The scheduler needs explicit admission limits, cancellation, completion, and failure semantics before it is connected to model execution. KV allocation should state its block size, ownership, reclamation behavior, and memory accounting. Collective calls should be added only with an available distributed backend and a reproducible multi-process profile.
+
+## Known limitations
+
+The current coordinator is single-process and its registry is ephemeral. There is no gRPC transport, remote worker execution, model weight loader, tokenizer, real generation loop, continuous-batching integration, production KV cache, authentication, persistence, deployment manifests, or performance data. The demos establish layout behavior only; they do not establish network latency or inference throughput.
