@@ -1,8 +1,9 @@
-"""Development master process with health and worker-status endpoints."""
+"""Coordinator API for worker registration and cluster inspection."""
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
 
-from distributed_memgrid.protocol import WorkerInfo
+from distributed_memgrid.protocol import WorkerInfo, WorkerState
 from distributed_memgrid.registry import WorkerRegistry
 
 app = FastAPI(title="Distributed Memory Grid Master", version="0.1.0")
@@ -17,6 +18,38 @@ async def health() -> dict[str, str]:
 @app.get("/workers")
 async def list_workers() -> list[WorkerInfo]:
     return registry.list_workers()
+
+
+class WorkerRegistration(BaseModel):
+    worker_id: str = Field(min_length=1, max_length=128)
+    address: str = Field(min_length=1, max_length=512)
+    memory_bytes: int = Field(default=0, ge=0)
+    labels: dict[str, str] = Field(default_factory=dict)
+
+
+@app.post("/workers", status_code=201)
+async def register_worker(payload: WorkerRegistration) -> WorkerInfo:
+    worker = WorkerInfo(
+        worker_id=payload.worker_id.strip(),
+        address=payload.address,
+        memory_bytes=payload.memory_bytes,
+        labels=payload.labels,
+    )
+    if not worker.worker_id:
+        raise HTTPException(status_code=422, detail="worker_id cannot be blank")
+    registry.register(worker)
+    return worker
+
+
+@app.get("/cluster")
+async def cluster_summary() -> dict[str, int | str]:
+    workers = registry.list_workers()
+    return {
+        "status": "ok",
+        "worker_count": len(workers),
+        "ready_workers": sum(worker.state == WorkerState.READY for worker in workers),
+        "reported_memory_bytes": sum(worker.memory_bytes for worker in workers),
+    }
 
 
 if __name__ == "__main__":

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101412">
+  <meta name="description" content="A review preview of Distributed Memory Grid: a research prototype exploring model sharding and coordinated LLM inference across commodity workers.">
+  <title>Memory Grid — Distributed inference, made visible</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="Memory Grid home"><span class="brand-mark">M<span>·</span>G</span><span>MEMORY GRID</span></a>
+    <nav aria-label="Main navigation"><a href="#system">System</a><a href="#progress">Progress</a><a href="#roadmap">Roadmap</a></nav>
+    <a class="top-link" href="../README.md">Repository <span>↗</span></a>
+  </header>
+
+  <main id="top">
+    <section class="hero wrap">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="pulse"></span> RESEARCH PROTOTYPE <span class="eyebrow-sep">/</span> REVIEW PREVIEW</div>
+        <h1>One model.<br><em>Many machines.</em></h1>
+        <p class="lead">Exploring how model weights and inference work can be shared across a grid of commodity nodes.</p>
+        <div class="hero-actions"><a class="button primary" href="#system">Explore the system <span>↓</span></a><a class="text-link" href="#progress">See what works <span>↗</span></a></div>
+        <div class="hero-note"><span class="note-line"></span><span>EARLY BUILD · SYNTHETIC TENSOR DEMO</span></div>
+      </div>
+      <div class="visual" aria-label="Illustration of a coordinator distributing model shards to worker nodes">
+        <div class="visual-top"><span>01 — DISTRIBUTED PATH</span><span class="live-label"><i></i> SIMULATED</span></div>
+        <svg class="network" viewBox="0 0 540 390" role="img" aria-labelledby="network-title">
+          <title id="network-title">Coordinator connected to four model workers</title>
+          <defs><linearGradient id="wire" x1="0" x2="1"><stop stop-color="#7bf0b2" stop-opacity=".62"/><stop offset="1" stop-color="#7bf0b2" stop-opacity=".12"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+          <path class="wire" d="M270 150V205M270 205H105V260M270 205H215V260M270 205H325V260M270 205H435V260"/>
+          <path class="wire faint" d="M105 205H435"/>
+          <circle class="packet p1" r="3"><animateMotion dur="2.8s" repeatCount="indefinite" path="M270 150V205H105V260"/></circle>
+          <circle class="packet p2" r="3"><animateMotion dur="3.1s" begin=".5s" repeatCount="indefinite" path="M270 150V205H215V260"/></circle>
+          <circle class="packet p3" r="3"><animateMotion dur="3.4s" begin="1s" repeatCount="indefinite" path="M270 150V205H325V260"/></circle>
+          <circle class="packet p4" r="3"><animateMotion dur="3s" begin="1.4s" repeatCount="indefinite" path="M270 150V205H435V260"/></circle>
+          <g class="master-node" filter="url(#glow)"><rect x="192" y="43" width="156" height="107" rx="12"/><path d="M216 79h20l10 13 10-25 11 18h20"/><text x="270" y="122" text-anchor="middle">COORDINATOR</text><circle cx="325" cy="63" r="3"/></g>
+          <g class="worker-node" transform="translate(61 260)"><rect width="88" height="75" rx="9"/><path d="M23 26h42M23 36h42M23 46h28"/><text x="44" y="65" text-anchor="middle">NODE 01</text></g>
+          <g class="worker-node" transform="translate(171 260)"><rect width="88" height="75" rx="9"/><path d="M23 26h42M23 36h42M23 46h28"/><text x="44" y="65" text-anchor="middle">NODE 02</text></g>
+          <g class="worker-node" transform="translate(281 260)"><rect width="88" height="75" rx="9"/><path d="M23 26h42M23 36h42M23 46h28"/><text x="44" y="65" text-anchor="middle">NODE 03</text></g>
+          <g class="worker-node" transform="translate(391 260)"><rect width="88" height="75" rx="9"/><path d="M23 26h42M23 36h42M23 46h28"/><text x="44" y="65" text-anchor="middle">NODE 04</text></g>
+          <text class="axis-label" x="270" y="372" text-anchor="middle">WEIGHTS SPLIT → COMPUTE DISTRIBUTED → OUTPUT GATHERED</text>
+        </svg>
+        <div class="visual-caption"><span>MODEL SHARDS</span><span class="caption-dash"></span><span>WORKER GRID</span><span class="caption-dash"></span><span>GATHERED RESULT</span></div>
+      </div>
+      <div class="hero-bottom"><span>01 / 04 &nbsp; PROJECT SNAPSHOT</span><span>PYTHON&nbsp; · &nbsp;PYTORCH-READY&nbsp; · &nbsp;gRPC-PLANNED</span></div>
+    </section>
+
+    <section class="ticker" aria-label="Project themes"><div class="ticker-track"><span>MODEL SHARDING</span><b>✳</b><span>WORKER COORDINATION</span><b>✳</b><span>CONTINUOUS BATCHING</span><b>✳</b><span>OPEN RESEARCH</span><b>✳</b><span>MODEL SHARDING</span><b>✳</b><span>WORKER COORDINATION</span><b>✳</b><span>CONTINUOUS BATCHING</span><b>✳</b><span>OPEN RESEARCH</span><b>✳</b></div></section>
+
+    <section class="section wrap" id="system">
+      <div class="section-head"><div><div class="eyebrow">01 — THE IDEA</div><h2>Inference without<br><em>the single-box ceiling.</em></h2></div><p class="section-intro">A learning project investigating the control plane and tensor layouts behind multi-node inference. The current demo uses synthetic tensors so the correctness story stays easy to inspect.</p></div>
+      <div class="feature-grid">
+        <article class="feature-card"><div class="feature-num">01 / SHARD</div><div class="mini-icon">↗</div><h3>Split the weights</h3><p>Column and row partition helpers split dense tensors into explicit, contiguous shards and reconstruct them with metadata checks.</p><span class="tag implemented">IMPLEMENTED</span></article>
+        <article class="feature-card"><div class="feature-num">02 / COORDINATE</div><div class="mini-icon">⌘</div><h3>Coordinate workers</h3><p>A lightweight coordinator API exposes health, worker registration, and cluster capacity summaries for a reviewable control-plane boundary.</p><span class="tag implemented">IMPLEMENTED</span></article>
+        <article class="feature-card"><div class="feature-num">03 / GENERATE</div><div class="mini-icon">⟳</div><h3>Schedule each step</h3><p>Runtime primitives model iteration-level request admission and bounded token-slot cache lifecycles. Model execution and GPU cache pages remain future work.</p><span class="tag prototype">PROTOTYPE</span></article>
+      </div>
+    </section>
+
+    <section class="metrics-band" id="progress"><div class="wrap metrics-inner"><div class="metric-intro"><div class="eyebrow">02 — PROJECT STATUS</div><h2>Progress you<br>can <em>verify.</em></h2><p>Built as a transparent review milestone. No benchmark claims or model-serving claims are implied.</p></div><div class="metrics"><div class="metric"><strong>2</strong><span>PARALLEL LAYOUTS</span><small>Column + row demo paths</small></div><div class="metric"><strong>3</strong><span>COORDINATOR ROUTES</span><small>Health, workers, cluster</small></div><div class="metric"><strong>0</strong><span>MODEL DOWNLOADS</span><small>Synthetic fixture only</small></div><div class="metric"><strong class="metric-word">NEXT</strong><span>REAL TRANSPORT</span><small>gRPC worker RPCs planned</small></div></div></div></section>
+
+    <section class="section wrap roadmap" id="roadmap"><div class="section-head"><div><div class="eyebrow">03 — THE ROADMAP</div><h2>From shard demo<br>to <em>inference grid.</em></h2></div><p class="section-intro">A four-stage path from verifiable tensor layouts to a deployable cluster. Checkpoints should be backed by working code and measurements.</p></div>
+      <div class="timeline">
+        <article class="phase done"><div class="phase-marker"><span>01</span></div><div class="phase-meta"><span>FOUNDATIONS</span><span class="status-pill">BASELINE BUILT</span></div><h3>Topology &amp; shard correctness</h3><p>Worker registry API, deterministic split/join helpers, and reference comparisons for column and row parallel linear layers.</p><div class="phase-foot">PYTHON · FASTAPI · SYNTHETIC TENSORS</div></article>
+        <article class="phase active"><div class="phase-marker"><span>02</span></div><div class="phase-meta"><span>MODEL PARALLEL</span><span class="status-pill progress-pill">IN PROGRESS</span></div><h3>Load &amp; communicate</h3><p>Add safetensors memory mapping, gRPC registration and assignment, and a multi-process demo with shard reconstruction.</p><div class="phase-foot">TARGET · TORCH DISTRIBUTED · gRPC</div></article>
+        <article class="phase"><div class="phase-marker"><span>03</span></div><div class="phase-meta"><span>RUNTIME</span><span class="status-pill planned-pill">PLANNED</span></div><h3>Batch &amp; stream</h3><p>Connect a supported model, iteration scheduler, production KV cache, and a client gateway that streams generated tokens.</p><div class="phase-foot">TARGET · CONTINUOUS BATCHING · WEBSOCKETS</div></article>
+        <article class="phase"><div class="phase-marker"><span>04</span></div><div class="phase-meta"><span>DEPLOY &amp; MEASURE</span><span class="status-pill planned-pill">PLANNED</span></div><h3>Deploy &amp; evaluate</h3><p>Package workers for orchestration, then report TTFT, throughput, and inter-node latency with reproducible hardware notes.</p><div class="phase-foot">TARGET · CONTAINERS · BENCHMARK REPORT</div></article>
+      </div>
+    </section>
+
+    <section class="demo-section"><div class="wrap demo-layout"><div><div class="eyebrow">04 — LIVE INTERACTION</div><h2>Watch a request<br><em>move through.</em></h2><p>This browser-only animation illustrates the intended flow. It does not connect to a running inference cluster.</p><button class="button primary" id="run-demo" type="button">Run visual demo <span>↗</span></button></div><div class="terminal" aria-live="polite"><div class="terminal-head"><span><i></i> GRID / FLOW PREVIEW</span><span>LOCAL SIMULATION</span></div><div class="terminal-body" id="demo-log"><p class="log-muted">$ ready — start the visual demo</p></div><div class="terminal-foot"><span>EVENT STREAM</span><span id="demo-state">IDLE</span></div></div></div></section>
+
+    <section class="closing wrap"><div class="closing-mark">M<span>·</span>G</div><div><div class="eyebrow">A WORK IN PROGRESS</div><h2>Build the grid.<br><em>Measure what matters.</em></h2><p>Review the code, run the deterministic demos, and help shape the next milestone.</p><a class="button outline" href="../README.md">Read the project README <span>↗</span></a></div><div class="closing-side">DISTRIBUTED MEMORY GRID<br>REVIEW PREVIEW · 2026</div></section>
+  </main>
+  <footer class="footer wrap"><span>© 2026 DISTRIBUTED MEMORY GRID</span><span>BUILT FOR PROJECT REVIEW · NOT A PRODUCTION INFERENCE SERVICE</span><a href="#top">BACK TO TOP ↑</a></footer>
+</body>
+</html>

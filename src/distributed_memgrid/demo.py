@@ -25,6 +25,7 @@ def main() -> None:
             1.0,
         ),
     )
+    bias = Tensor((4,), (0.5, -1.0, 1.5, 0.0))
 
     shards = split_tensor(weight, tensor_name="demo.linear.weight", axis=1, shard_count=2)
     print("Column-parallel linear demo")
@@ -35,8 +36,17 @@ def main() -> None:
             f"values={shard.tensor.values}"
         )
 
-    distributed_output = column_parallel_linear(inputs, weight, shard_count=2)
-    reference_output = matrix_multiply(inputs, weight)
+    distributed_output = column_parallel_linear(inputs, weight, shard_count=2, bias=bias)
+    raw_reference = matrix_multiply(inputs, weight)
+    reference_output = Tensor(
+        raw_reference.shape,
+        tuple(
+            value + bias.values[index % weight.shape[1]]
+            for index, value in enumerate(raw_reference.values)
+        ),
+        raw_reference.dtype,
+    )
+    print(f"Bias: {bias.values}")
     print(f"Gathered output: {distributed_output.values}")
     print(f"Single-process reference: {reference_output.values}")
 
