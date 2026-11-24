@@ -26,6 +26,7 @@ Start the coordinator API with `PYTHONPATH=src python -m distributed_memgrid.mas
 
 - `GET /health` — process health.
 - `POST /workers` — register a worker with `worker_id`, `address`, optional `memory_bytes`, and optional `labels`.
+- `POST /workers/{worker_id}/heartbeat` — report liveness and current `state` (`ready`, `busy`, or `unavailable`). Workers that do not heartbeat for 30 seconds are reported as unavailable.
 - `GET /workers` — list registered workers.
 - `GET /cluster` — summarize worker count and reported memory.
 

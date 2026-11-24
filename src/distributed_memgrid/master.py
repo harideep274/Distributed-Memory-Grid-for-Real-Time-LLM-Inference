@@ -27,6 +27,10 @@ class WorkerRegistration(BaseModel):
     labels: dict[str, str] = Field(default_factory=dict)
 
 
+class WorkerHeartbeat(BaseModel):
+    state: WorkerState = WorkerState.READY
+
+
 @app.post("/workers", status_code=201)
 async def register_worker(payload: WorkerRegistration) -> WorkerInfo:
     worker = WorkerInfo(
@@ -38,6 +42,14 @@ async def register_worker(payload: WorkerRegistration) -> WorkerInfo:
     if not worker.worker_id:
         raise HTTPException(status_code=422, detail="worker_id cannot be blank")
     registry.register(worker)
+    return worker
+
+
+@app.post("/workers/{worker_id}/heartbeat")
+async def worker_heartbeat(worker_id: str, payload: WorkerHeartbeat) -> WorkerInfo:
+    worker = registry.heartbeat(worker_id, payload.state)
+    if worker is None:
+        raise HTTPException(status_code=404, detail="worker is not registered")
     return worker
 
 
