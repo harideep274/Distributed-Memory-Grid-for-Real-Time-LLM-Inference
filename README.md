@@ -20,6 +20,7 @@ source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
 python -m pip install -e '.[dev]'
 PYTHONPATH=src python -m distributed_memgrid.demo
 PYTHONPATH=src python -m distributed_memgrid.row_parallel_demo
+PYTHONPATH=src python -m distributed_memgrid.cluster_demo
 ```
 
 Start the coordinator API with `PYTHONPATH=src python -m distributed_memgrid.master`. It listens on `http://127.0.0.1:8000` and exposes:
@@ -37,6 +38,12 @@ Example registration body:
 ```
 
 The registry is in memory and resets when the process restarts. Registration is a coordinator API boundary; it is not a gRPC worker connection.
+
+`cluster_demo` connects the in-memory registry to two worker objects, assigns
+synthetic column-parallel weight shards, computes each worker's local result,
+and compares the gathered result with a single-process reference. It validates
+the assignment and tensor shape boundaries, but does not launch separate worker
+processes or transfer real model files.
 
 ## Review website
 

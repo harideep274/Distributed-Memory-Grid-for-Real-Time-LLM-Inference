@@ -20,3 +20,6 @@ checkpoints/
 models/
 coverage.xml
 htmlcov/
+
+.DS_Store
+/Distributed-Memory-Grid-for-Real-Time-LLM-Inference/
