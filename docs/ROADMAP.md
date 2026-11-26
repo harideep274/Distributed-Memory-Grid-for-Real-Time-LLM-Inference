@@ -38,6 +38,21 @@ This roadmap translates the project brief into staged acceptance evidence. The r
 
 **Checkpoint:** a reproducible deployment generates tokens across workers, with benchmark methodology and results published alongside deployment scripts.
 
+## Progress update — synthetic worker assignment slice
+
+The repository now has a runnable `distributed_memgrid.cluster_demo` that
+registers two in-process workers, assigns each a synthetic column-parallel
+weight shard, validates and retains the shard, computes local outputs, and
+checks that gathering matches the unsharded reference. Worker-side validation
+rejects malformed rank, shape, axis, and shard index metadata.
+
+This is partial evidence for the shared two-week goal. It does not complete
+Week 1: workers are still in one process, assignments use Python objects, and
+there is no gRPC transport, checkpoint loading, reconnect behavior, or
+multi-process run configuration. The next concrete step is to freeze an RPC
+schema and move registration and shard assignment across a local process
+boundary before adding safetensors loading.
+
 ## Current review milestone
 
 The current code provides dependency-free synthetic column- and row-parallel linear demos, coordinator HTTP endpoints, and in-memory runtime sketches. It does not satisfy the multi-node inference checkpoints above. Use the four-week review website as a status overview, and update this file as each checkpoint gains evidence.
